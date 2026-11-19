@@ -114,7 +114,6 @@ input[type=range]:disabled{opacity:.32;pointer-events:none}
 .fi small{font-size:8px;color:var(--sub)}
 #selInfo{font:9.5px var(--mono);color:var(--sub);white-space:nowrap}
 #selInfo b{color:var(--ink)}
-/* convert panel — four equal blocks */
 #convertPanel{display:flex;flex-direction:column;min-height:0}
 #blocks{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:8px;min-height:0}
 .blk{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line2);border-radius:3px;min-width:0;min-height:0}
@@ -231,7 +230,7 @@ kbd{border:1px solid var(--line2);background:var(--panel);padding:1px 5px;font:9
 
 <div id="app">
 <header id="topbar">
-  <div class="tb-left"><div class="brand"><b>TRAKT<em>⁄AUDIO</em></b><small data-i18n="app_sub">Аудиоконвертер</small></div></div>
+  <div class="tb-left"><div class="brand"><b>TRAKT<em>⁄AUDIO</em></b><small id="brandSub" data-i18n="app_sub">Аудиоконвертер</small></div></div>
   <div class="tb-center">
     <div class="transport">
       <button id="btnPlay" class="tbtn" data-i18n-title="play_t" title="Плей / пауза (Space)"><svg class="i-play" width="15" height="15" viewBox="0 0 14 14"><path d="M3 2l9 5-9 5z" fill="currentColor"/></svg><svg class="i-pause" width="15" height="15" viewBox="0 0 14 14"><path d="M3 2h3v10H3zM8 2h3v10H8z" fill="currentColor"/></svg></button>
@@ -280,7 +279,6 @@ kbd{border:1px solid var(--line2);background:var(--panel);padding:1px 5px;font:9
 
     <section id="convertPanel">
       <div id="blocks">
-        <!-- FORMAT -->
         <div class="blk" id="blkFormat">
           <header><b data-i18n="h_format">01 · ФОРМАТ</b></header>
           <div class="body">
@@ -308,7 +306,6 @@ kbd{border:1px solid var(--line2);background:var(--panel);padding:1px 5px;font:9
             <div class="note" id="outNote"></div>
           </div>
         </div>
-        <!-- PROCESS -->
         <div class="blk" id="blkProcess">
           <header><b data-i18n="h_process">02 · ОБРАБОТКА</b><span class="flex"></span><button id="procReset" class="chip" data-i18n-title="proc_reset_t" title="Сбросить обработку">⟲</button></header>
           <div class="body">
@@ -327,7 +324,6 @@ kbd{border:1px solid var(--line2);background:var(--panel);padding:1px 5px;font:9
             <div class="note" data-i18n="proc_note">порядок: регион → каналы → DC → шумодав → ресемпл → реверс/инверсия → усиление → фейды → нормализация</div>
           </div>
         </div>
-        <!-- DENOISE -->
         <div class="blk" id="blkDenoise">
           <header><b data-i18n="h_denoise">03 · ШУМОДАВ</b></header>
           <div class="body">
@@ -343,7 +339,6 @@ kbd{border:1px solid var(--line2);background:var(--panel);padding:1px 5px;font:9
             <div class="note" data-i18n="dn_note">спектральное вычитание · авто-профиль по тихим кадрам · для сплошного сигнала обучите профиль</div>
           </div>
         </div>
-        <!-- PRESETS + CONVERT -->
         <div class="blk" id="blkPresets">
           <header><b data-i18n="h_presets">04 · ПРЕСЕТЫ</b></header>
           <div class="body">
@@ -392,6 +387,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const yieldUI=()=>sleep(0);
 const deepCopy=o=>JSON.parse(JSON.stringify(o));
+const PORTABLE=location.protocol==='file:';
 const fmtBytes=b=>{if(!isFinite(b))return'—';if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';if(b<1073741824)return(b/1048576).toFixed(2)+' MB';return(b/1073741824).toFixed(2)+' GB'};
 const fmtDur=s=>{if(!isFinite(s))return'—';const m=Math.floor(s/60),ss=Math.floor(s%60);return m+':'+String(ss).padStart(2,'0')};
 const fmtTime=s=>{s=Math.max(0,s);const m=Math.floor(s/60),ss=Math.floor(s%60),cc=Math.floor((s%1)*100);return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0')+'.'+String(cc).padStart(2,'0')};
@@ -404,14 +400,15 @@ const FMT_META={wav:{codec:'PCM',cont:'RIFF',ll:true},mp3:{codec:'MPEG-L3',cont:
 /* ---------- i18n ---------- */
 let LANG='ru';
 const I18N={
-ru:{app_sub:'Аудиоконвертер',open:'открыть',open_files:'открыть файлы',play_t:'Плей / пауза (Space)',stop_t:'Стоп (Esc)',loop_t:'Зациклить регион (L)',meter_t:'Выход L/R · визуальный контроль уровня',help_t:'Хоткеи и мануал (?)',theme_t:'Светлая / тёмная тема',add_t:'Добавить файлы (Ctrl+O)',import:'ИМПОРТ',results:'РЕЗУЛЬТАТЫ',h_format:'01 · ФОРМАТ',h_process:'02 · ОБРАБОТКА',h_denoise:'03 · ШУМОДАВ',h_presets:'04 · ПРЕСЕТЫ',convert:'convert',convert_t:'Конвертировать выбранный трек (Ctrl+Enter)',batch_t:'Конвертировать все треки импорта',cancel_t:'Отменить',saveall:'сохранить всё',clear:'очистить',save:'сохранить',delete:'удалить',reset_all:'сброс всего',preset_ph:'имя пресета…',preset_sel:'— пресет —',built_in:'встроенные',my:'мои',depth:'разряд.',level:'уровень',bitrate:'битрейт',quality:'качество',complex:'сложн.',signal:'сигнал',rate:'частота',channels:'каналы',original:'оригинал',mono:'моно',stereo:'стерео',music:'музыка',voice:'речь',cosine:'косинус',linear:'линейная',square:'квадрат',gain:'усиление',normalize:'нормализ.',fadein:'fade in',fadeout:'fade out',curve:'кривая',reverse:'реверс',invert:'инверсия',dc:'DC-фильтр',dither:'дитеринг',region:'регион',off:'выкл',on:'вкл',amount:'сила',resolution:'окно',floor:'остаток',fast:'быстро',standard:'стандарт',fine:'точно',profile:'профиль',learn:'обучить',clear_profile:'Сброс профиля шума',learn_hint:'выделите участок только с шумом и нажмите «обучить»',dn_note:'спектральное вычитание · авто-профиль по тихим кадрам · для сплошного сигнала обучите профиль',proc_note:'порядок: регион → каналы → DC → шумодав → ресемпл → реверс/инверсия → усиление → фейды → нормализация',type:'TYPE',lossy:'с потерями',lossless:'без потерь',size:'размер:',imp_empty1:'СПИСОК ПУСТ',imp_empty2:'перетащите аудио в окно',res_empty:'пусто — результаты конвертации появятся здесь',drop:'отпустите файлы',wave_empty:'ПЕРЕТАЩИТЕ АУДИО СЮДА',wave_empty2:'или нажмите «открыть» вверху',region_reset_t:'Сбросить регион на весь файл',proc_reset_t:'Сбросить обработку',lame_wait:'lame загружается…',lame_no:'mp3 недоступен офлайн',aac_no:'aac недоступен в этом браузере',opus_no:'opus недоступен в этом браузере',ogg_note:'ogg = контейнер Ogg · кодек Opus (Vorbis-энкодер недоступен в браузерах)',alac_note:'alac = Apple Lossless · без потерь (несжатые кадры)',cbr:'cbr',vbr:'vbr',help_title:'МАНУАЛ · ХОТКЕИ',hk:'ХОТКЕИ',manual:'КАК ПОЛЬЗОВАТЬСЯ',hk_play:'Плей / пауза',hk_stop:'Стоп',hk_loop:'Зациклить регион',hk_del:'Убрать трек из импорта',hk_conv:'Конвертировать выбранный',hk_open:'Открыть файлы',hk_help:'Это окно',hk_trim:'Точная подстройка границ региона (Shift — ×10)',man1:'<b>1 · Импорт.</b> Перетащите аудиофайлы в окно или нажмите «открыть». При старте проект пустой. Кликните по треку слева, чтобы увидеть превью и конвертировать его отдельно.',man2:'<b>2 · Регион.</b> Тяните оранжевые маркеры на волне или задайте границы в поле «регион». Конвертируется только выделенный участок.',man3:'<b>3 · Формат и обработка.</b> 9 форматов, частота и каналы. Усиление, нормализация, фейды, реверс, инверсия фазы, DC-фильтр и дитеринг. Пресеты сохраняют все настройки.',man4:'<b>4 · Шумодав.</b> Для записей с паузами работает авто-профиль. Для сплошного сигнала (дрон, музыка) выделите участок только с шумом и нажмите «обучить» — профиль снимается с региона. «Сила» — глубина вычитания, «остаток» — защита от музыкального шума.',man5:'<b>5 · Конвертация.</b> CONVERT — выбранный трек, BATCH — все. Результаты справа: скачать, прослушать, вернуть в импорт или «сохранить всё» (zip). Всё считается локально в браузере.',t_dec_fail:'Не декодируется: ',t_big:' очень большой — декодирование может занять много памяти.',t_mp3_fb:'MP3-кодек не загрузился (нужна сеть). Переключено на WAV.',t_opus_fb:'Opus недоступен в этом браузере — переключено на WAV.',t_aac_fb:'AAC недоступен в этом браузере — переключено на WAV.',t_vbr_fb:'VBR недоступен — использован CBR ',t_sr_fb:' Hz не поддерживается устройством → 48000 Hz',t_no_ready:'Нет готовых треков для конвертации.',t_mp3_un:'MP3-кодек недоступен.',t_opus_un:'Opus недоступен в этом браузере.',t_aac_un:'AAC недоступен в этом браузере (нужен Chrome/Edge/Safari).',t_cancel:'Конвертация отменена. Готовое — в РЕЗУЛЬТАТАХ.',t_batch:'Batch готов: {n} файлов.',t_removed:'Убрано: ',t_removed_n:'Убрано: {n}',t_undo:'отменить',t_res_cleared:'РЕЗУЛЬТАТЫ очищены ({n})',t_download:'скачать',t_preset_applied:'Пресет «{n}» применён.',t_preset_saved:'Сохранено: «{n}»',t_preset_del:'Удалено: «{n}»',t_pick_preset:'Выберите свой пресет для удаления.',t_proc_reset:'Обработка сброшена.',t_reset_all:'Все настройки сброшены.',t_zip:'save all: {n} файлов · ',t_play_fail:'Не удалось воспроизвести.',t_init:'Init: ',t_conv_err:'Ошибка: ',t_region_short:'регион слишком короткий',t_to_import:' → в импорт',t_conv_guard:' конвертируется — сначала отмените.',t_decode_err:'Браузер не смог декодировать «{n}». Попробуйте WAV, MP3, FLAC, OGG или M4A.',t_learned:'профиль шума обучен · {n} с',t_learn_short:'регион слишком короткий для профиля',t_no_file_learn:'сначала выберите трек',decode_error:'ошибка декодирования',dsp:'dsp',denoise:'шумодав',encode:'кодирование',mono_s:'моно',stereo_s:'стерео',norm_s:'норм'},
-en:{app_sub:'Audio Converter',open:'open',open_files:'open files',play_t:'Play / pause (Space)',stop_t:'Stop (Esc)',loop_t:'Loop region (L)',meter_t:'Output L/R · visual level control',help_t:'Hotkeys & manual (?)',theme_t:'Light / dark theme',add_t:'Add files (Ctrl+O)',import:'IMPORT',results:'RESULTS',h_format:'01 · FORMAT',h_process:'02 · PROCESS',h_denoise:'03 · DENOISE',h_presets:'04 · PRESETS',convert:'convert',convert_t:'Convert selected track (Ctrl+Enter)',batch_t:'Convert all imported tracks',cancel_t:'Cancel',saveall:'save all',clear:'clear',save:'save',delete:'delete',reset_all:'reset all',preset_ph:'preset name…',preset_sel:'— preset —',built_in:'built-in',my:'my',depth:'depth',level:'level',bitrate:'bitrate',quality:'quality',complex:'complex',signal:'signal',rate:'rate',channels:'channels',original:'original',mono:'mono',stereo:'stereo',music:'music',voice:'voice',cosine:'cosine',linear:'linear',square:'square',gain:'gain',normalize:'normalize',fadein:'fade in',fadeout:'fade out',curve:'curve',reverse:'reverse',invert:'invert',dc:'DC remove',dither:'dither',region:'region',off:'off',on:'on',amount:'amount',resolution:'window',floor:'floor',fast:'fast',standard:'standard',fine:'fine',profile:'profile',learn:'learn',clear_profile:'Clear noise profile',learn_hint:'select a noise-only region and press “learn”',dn_note:'spectral subtraction · auto profile from quiet frames · for continuous material learn the profile',proc_note:'order: region → channels → DC → denoise → resample → reverse/invert → gain → fades → normalize',type:'TYPE',lossy:'lossy',lossless:'lossless',size:'size:',imp_empty1:'LIST EMPTY',imp_empty2:'drop audio anywhere in the window',res_empty:'empty — conversion results will appear here',drop:'release to open files',wave_empty:'DROP AUDIO FILES HERE',wave_empty2:'or press “open” above',region_reset_t:'Reset region to whole file',proc_reset_t:'Reset processing',lame_wait:'loading lame…',lame_no:'mp3 unavailable offline',aac_no:'aac unavailable in this browser',opus_no:'opus unavailable in this browser',ogg_note:'ogg = Ogg container · Opus codec (Vorbis encoder unavailable in browsers)',alac_note:'alac = Apple Lossless · lossless (uncompressed frames)',cbr:'cbr',vbr:'vbr',help_title:'MANUAL · HOTKEYS',hk:'HOTKEYS',manual:'HOW TO USE',hk_play:'Play / pause',hk_stop:'Stop',hk_loop:'Loop region',hk_del:'Remove track from import',hk_conv:'Convert selected',hk_open:'Open files',hk_help:'This window',hk_trim:'Fine-tune region edges (Shift = ×10)',man1:'<b>1 · Import.</b> Drop audio files into the window or press “open”. The project starts empty. Click a track on the left to see its preview and convert it individually.',man2:'<b>2 · Region.</b> Drag the orange markers on the waveform or set boundaries in the “region” field. Only the selected span is converted.',man3:'<b>3 · Format & processing.</b> 9 formats, rate and channels. Gain, normalize, fades, reverse, phase invert, DC removal and dither. Presets store the full setup.',man4:'<b>4 · Denoise.</b> Auto profile works for recordings with pauses. For continuous material (drone, music) select a noise-only region and press “learn” — the profile is captured from the region. “Amount” is subtraction depth, “floor” guards against musical noise.',man5:'<b>5 · Convert.</b> CONVERT — selected track, BATCH — all. Results on the right: download, preview, send back to import, or “save all” (zip). Everything runs locally in your browser.',t_dec_fail:'Cannot decode: ',t_big:' is very large — decoding may use a lot of memory.',t_mp3_fb:'MP3 codec failed to load (network needed). Switched to WAV.',t_opus_fb:'Opus unavailable in this browser — switched to WAV.',t_aac_fb:'AAC unavailable in this browser — switched to WAV.',t_vbr_fb:'VBR unavailable — used CBR ',t_sr_fb:' Hz not supported by device → 48000 Hz',t_no_ready:'No ready tracks to convert.',t_mp3_un:'MP3 codec unavailable.',t_opus_un:'Opus unavailable in this browser.',t_aac_un:'AAC unavailable in this browser (needs Chrome/Edge/Safari).',t_cancel:'Conversion cancelled. Finished files are in RESULTS.',t_batch:'Batch done: {n} files.',t_removed:'Removed: ',t_removed_n:'Removed: {n}',t_undo:'undo',t_res_cleared:'RESULTS cleared ({n})',t_download:'download',t_preset_applied:'Preset “{n}” applied.',t_preset_saved:'Saved: “{n}”',t_preset_del:'Deleted: “{n}”',t_pick_preset:'Select your own preset to delete.',t_proc_reset:'Processing reset.',t_reset_all:'All settings reset.',t_zip:'save all: {n} files · ',t_play_fail:'Playback failed.',t_init:'Init: ',t_conv_err:'Error: ',t_region_short:'region too short',t_to_import:' → to import',t_conv_guard:' is converting — cancel first.',t_decode_err:'Browser could not decode “{n}”. Try WAV, MP3, FLAC, OGG or M4A.',t_learned:'noise profile learned · {n} s',t_learn_short:'region too short for a profile',t_no_file_learn:'select a track first',decode_error:'decode error',dsp:'dsp',denoise:'denoise',encode:'encode',mono_s:'mono',stereo_s:'stereo',norm_s:'norm'}
+ru:{app_sub:'Аудиоконвертер',app_sub_port:'Портативный аудиоконвертер',open:'открыть',open_files:'открыть файлы',play_t:'Плей / пауза (Space)',stop_t:'Стоп (Esc)',loop_t:'Зациклить регион (L)',meter_t:'Выход L/R · визуальный контроль уровня',help_t:'Хоткеи и мануал (?)',theme_t:'Светлая / тёмная тема',add_t:'Добавить файлы (Ctrl+O)',import:'ИМПОРТ',results:'РЕЗУЛЬТАТЫ',h_format:'01 · ФОРМАТ',h_process:'02 · ОБРАБОТКА',h_denoise:'03 · ШУМОДАВ',h_presets:'04 · ПРЕСЕТЫ',convert:'convert',convert_t:'Конвертировать выбранный трек (Ctrl+Enter)',batch_t:'Конвертировать все треки импорта',cancel_t:'Отменить',saveall:'сохранить всё',clear:'очистить',save:'сохранить',delete:'удалить',reset_all:'сброс всего',preset_ph:'имя пресета…',preset_sel:'— пресет —',built_in:'встроенные',my:'мои',depth:'разряд.',level:'уровень',bitrate:'битрейт',quality:'качество',complex:'сложн.',signal:'сигнал',rate:'частота',channels:'каналы',original:'оригинал',mono:'моно',stereo:'стерео',music:'музыка',voice:'речь',cosine:'косинус',linear:'линейная',square:'квадрат',gain:'усиление',normalize:'нормализ.',fadein:'fade in',fadeout:'fade out',curve:'кривая',reverse:'реверс',invert:'инверсия',dc:'DC-фильтр',dither:'дитеринг',region:'регион',off:'выкл',on:'вкл',amount:'сила',resolution:'окно',floor:'остаток',fast:'быстро',standard:'стандарт',fine:'точно',profile:'профиль',learn:'обучить',clear_profile:'Сброс профиля шума',learn_hint:'выделите участок только с шумом и нажмите «обучить»',dn_note:'спектральное вычитание · авто-профиль по тихим кадрам · для сплошного сигнала обучите профиль',proc_note:'порядок: регион → каналы → DC → шумодав → ресемпл → реверс/инверсия → усиление → фейды → нормализация',type:'TYPE',lossy:'с потерями',lossless:'без потерь',size:'размер:',imp_empty1:'СПИСОК ПУСТ',imp_empty2:'перетащите аудио в окно',res_empty:'пусто — результаты конвертации появятся здесь',drop:'отпустите файлы',wave_empty:'ПЕРЕТАЩИТЕ АУДИО СЮДА',wave_empty2:'или нажмите «открыть» вверху',region_reset_t:'Сбросить регион на весь файл',proc_reset_t:'Сбросить обработку',lame_wait:'lame загружается…',lame_no:'mp3 недоступен офлайн',aac_no:'aac недоступен в этом браузере',opus_no:'opus недоступен в этом браузере',ogg_note:'ogg = контейнер Ogg · кодек Opus (Vorbis-энкодер недоступен в браузерах)',alac_note:'alac = Apple Lossless · без потерь (несжатые кадры)',cbr:'cbr',vbr:'vbr',help_title:'МАНУАЛ · ХОТКЕИ',hk:'ХОТКЕИ',manual:'КАК ПОЛЬЗОВАТЬСЯ',hk_play:'Плей / пауза',hk_stop:'Стоп',hk_loop:'Зациклить регион',hk_del:'Убрать трек из импорта',hk_conv:'Конвертировать выбранный',hk_open:'Открыть файлы',hk_help:'Это окно',hk_trim:'Точная подстройка границ региона (Shift — ×10)',man1:'<b>1 · Импорт.</b> Перетащите аудиофайлы в окно или нажмите «открыть». При старте проект пустой. Кликните по треку слева, чтобы увидеть превью и конвертировать его отдельно.',man2:'<b>2 · Регион.</b> Тяните оранжевые маркеры на волне или задайте границы в поле «регион». Конвертируется только выделенный участок.',man3:'<b>3 · Формат и обработка.</b> 9 форматов, частота и каналы. Усиление, нормализация, фейды, реверс, инверсия фазы, DC-фильтр и дитеринг. Пресеты сохраняют все настройки.',man4:'<b>4 · Шумодав.</b> Для записей с паузами работает авто-профиль. Для сплошного сигнала (дрон, музыка) выделите участок только с шумом и нажмите «обучить» — профиль снимается с региона. «Сила» — глубина вычитания, «остаток» — защита от музыкального шума.',man5:'<b>5 · Экспорт.</b> CONVERT — выбранный трек, BATCH — все. Сразу открывается окно выбора места сохранения, и файл пишется прямо на диск (для BATCH — выбор папки). Если браузер не умеет выбирать путь, файл сохраняется обычной загрузкой. В РЕЗУЛЬТАТАХ по-прежнему: скачать, прослушать, вернуть в импорт, «сохранить всё» (zip). Всё считается локально.',t_dec_fail:'Не декодируется: ',t_big:' очень большой — декодирование может занять много памяти.',t_mp3_fb:'MP3-кодек не загрузился. Положите lame.min.js рядом с trakt.html или подключите сеть.',t_opus_fb:'Opus недоступен в этом браузере — переключено на WAV.',t_aac_fb:'AAC недоступен в этом браузере — переключено на WAV.',t_vbr_fb:'VBR недоступен — использован CBR ',t_sr_fb:' Hz не поддерживается устройством → 48000 Hz',t_no_ready:'Нет готовых треков для конвертации.',t_mp3_un:'MP3-кодек недоступен.',t_opus_un:'Opus недоступен в этом браузере.',t_aac_un:'AAC недоступен в этом браузере (нужен Chrome/Edge/Safari).',t_cancel:'Конвертация отменена. Готовое — в РЕЗУЛЬТАТАХ.',t_batch:'Batch готов: {n} файлов.',t_saved:'Сохранено: {n}',t_batch_saved:'Batch сохранён на диск: {n} файлов',t_save_cancel:'Сохранение отменено',t_save_fail:'Не удалось записать на диск — файл сохранён через браузер',t_removed:'Убрано: ',t_removed_n:'Убрано: {n}',t_undo:'отменить',t_res_cleared:'РЕЗУЛЬТАТЫ очищены ({n})',t_download:'скачать',t_preset_applied:'Пресет «{n}» применён.',t_preset_saved:'Сохранено: «{n}»',t_preset_del:'Удалено: «{n}»',t_pick_preset:'Выберите свой пресет для удаления.',t_proc_reset:'Обработка сброшена.',t_reset_all:'Все настройки сброшены.',t_zip:'save all: {n} файлов · ',t_play_fail:'Не удалось воспроизвести.',t_init:'Init: ',t_conv_err:'Ошибка: ',t_region_short:'регион слишком короткий',t_to_import:' → в импорт',t_conv_guard:' конвертируется — сначала отмените.',t_decode_err:'Браузер не смог декодировать «{n}». Попробуйте WAV, MP3, FLAC, OGG или M4A.',t_learned:'профиль шума обучен · {n} с',t_learn_short:'регион слишком короткий для профиля',t_no_file_learn:'сначала выберите трек',decode_error:'ошибка декодирования',dsp:'dsp',denoise:'шумодав',encode:'кодирование',mono_s:'моно',stereo_s:'стерео',norm_s:'норм'},
+en:{app_sub:'Audio Converter',app_sub_port:'Portable Audio Converter',open:'open',open_files:'open files',play_t:'Play / pause (Space)',stop_t:'Stop (Esc)',loop_t:'Loop region (L)',meter_t:'Output L/R · visual level control',help_t:'Hotkeys & manual (?)',theme_t:'Light / dark theme',add_t:'Add files (Ctrl+O)',import:'IMPORT',results:'RESULTS',h_format:'01 · FORMAT',h_process:'02 · PROCESS',h_denoise:'03 · DENOISE',h_presets:'04 · PRESETS',convert:'convert',convert_t:'Convert selected track (Ctrl+Enter)',batch_t:'Convert all imported tracks',cancel_t:'Cancel',saveall:'save all',clear:'clear',save:'save',delete:'delete',reset_all:'reset all',preset_ph:'preset name…',preset_sel:'— preset —',built_in:'built-in',my:'my',depth:'depth',level:'level',bitrate:'bitrate',quality:'quality',complex:'complex',signal:'signal',rate:'rate',channels:'channels',original:'original',mono:'mono',stereo:'stereo',music:'music',voice:'voice',cosine:'cosine',linear:'linear',square:'square',gain:'gain',normalize:'normalize',fadein:'fade in',fadeout:'fade out',curve:'curve',reverse:'reverse',invert:'invert',dc:'DC remove',dither:'dither',region:'region',off:'off',on:'on',amount:'amount',resolution:'window',floor:'floor',fast:'fast',standard:'standard',fine:'fine',profile:'profile',learn:'learn',clear_profile:'Clear noise profile',learn_hint:'select a noise-only region and press “learn”',dn_note:'spectral subtraction · auto profile from quiet frames · for continuous material learn the profile',proc_note:'order: region → channels → DC → denoise → resample → reverse/invert → gain → fades → normalize',type:'TYPE',lossy:'lossy',lossless:'lossless',size:'size:',imp_empty1:'LIST EMPTY',imp_empty2:'drop audio anywhere in the window',res_empty:'empty — conversion results will appear here',drop:'release to open files',wave_empty:'DROP AUDIO FILES HERE',wave_empty2:'or press “open” above',region_reset_t:'Reset region to whole file',proc_reset_t:'Reset processing',lame_wait:'loading lame…',lame_no:'mp3 unavailable offline',aac_no:'aac unavailable in this browser',opus_no:'opus unavailable in this browser',ogg_note:'ogg = Ogg container · Opus codec (Vorbis encoder unavailable in browsers)',alac_note:'alac = Apple Lossless · lossless (uncompressed frames)',cbr:'cbr',vbr:'vbr',help_title:'MANUAL · HOTKEYS',hk:'HOTKEYS',manual:'HOW TO USE',hk_play:'Play / pause',hk_stop:'Stop',hk_loop:'Loop region',hk_del:'Remove track from import',hk_conv:'Convert selected',hk_open:'Open files',hk_help:'This window',hk_trim:'Fine-tune region edges (Shift = ×10)',man1:'<b>1 · Import.</b> Drop audio files into the window or press “open”. The project starts empty. Click a track on the left to see its preview and convert it individually.',man2:'<b>2 · Region.</b> Drag the orange markers on the waveform or set boundaries in the “region” field. Only the selected span is converted.',man3:'<b>3 · Format & processing.</b> 9 formats, rate and channels. Gain, normalize, fades, reverse, phase invert, DC removal and dither. Presets store the full setup.',man4:'<b>4 · Denoise.</b> Auto profile works for recordings with pauses. For continuous material (drone, music) select a noise-only region and press “learn” — the profile is captured from the region. “Amount” is subtraction depth, “floor” guards against musical noise.',man5:'<b>5 · Export.</b> CONVERT — selected track, BATCH — all. A save-location dialog opens immediately and the file is written straight to disk (BATCH asks for a folder). If the browser cannot pick a path, the file is saved as a normal download. RESULTS still works as before: download, preview, send back to import, “save all” (zip). Everything runs locally.',t_dec_fail:'Cannot decode: ',t_big:' is very large — decoding may use a lot of memory.',t_mp3_fb:'MP3 codec failed to load. Put lame.min.js next to trakt.html or connect to the network.',t_opus_fb:'Opus unavailable in this browser — switched to WAV.',t_aac_fb:'AAC unavailable in this browser — switched to WAV.',t_vbr_fb:'VBR unavailable — used CBR ',t_sr_fb:' Hz not supported by device → 48000 Hz',t_no_ready:'No ready tracks to convert.',t_mp3_un:'MP3 codec unavailable.',t_opus_un:'Opus unavailable in this browser.',t_aac_un:'AAC unavailable in this browser (needs Chrome/Edge/Safari).',t_cancel:'Conversion cancelled. Finished files are in RESULTS.',t_batch:'Batch done: {n} files.',t_saved:'Saved: {n}',t_batch_saved:'Batch saved to disk: {n} files',t_save_cancel:'Save cancelled',t_save_fail:'Could not write to disk — saved via browser instead',t_removed:'Removed: ',t_removed_n:'Removed: {n}',t_undo:'undo',t_res_cleared:'RESULTS cleared ({n})',t_download:'download',t_preset_applied:'Preset “{n}” applied.',t_preset_saved:'Saved: “{n}”',t_preset_del:'Deleted: “{n}”',t_pick_preset:'Select your own preset to delete.',t_proc_reset:'Processing reset.',t_reset_all:'All settings reset.',t_zip:'save all: {n} files · ',t_play_fail:'Playback failed.',t_init:'Init: ',t_conv_err:'Error: ',t_region_short:'region too short',t_to_import:' → to import',t_conv_guard:' is converting — cancel first.',t_decode_err:'Browser could not decode “{n}”. Try WAV, MP3, FLAC, OGG or M4A.',t_learned:'noise profile learned · {n} s',t_learn_short:'region too short for a profile',t_no_file_learn:'select a track first',decode_error:'decode error',dsp:'dsp',denoise:'denoise',encode:'encode',mono_s:'mono',stereo_s:'stereo',norm_s:'norm'}
 };
 function t(k,n){let s=(I18N[LANG]&&I18N[LANG][k])||I18N.en[k]||k;if(n!==undefined)s=s.replace('{n}',n);return s}
 function applyLang(){document.documentElement.lang=LANG;
  document.querySelectorAll('[data-i18n]').forEach(el=>{el.textContent=t(el.dataset.i18n)});
  document.querySelectorAll('[data-i18n-title]').forEach(el=>{el.title=t(el.dataset.i18nTitle)});
  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{el.placeholder=t(el.dataset.i18nPh)});
+ $('brandSub').textContent=PORTABLE?t('app_sub_port'):t('app_sub');
  $('btnLang').textContent=LANG==='ru'?'EN':'RU';
  renderImport();renderResults();renderActive();buildCodecBox();renderPresets();renderFmt();renderDenoise();updateSummary();
  if($('helpScrim').classList.contains('show'))buildHelp()}
@@ -550,17 +547,17 @@ function drawField(now,force){if(!force&&now-FIELD.last<33)return;const dt=FIELD
  for(const d of FIELD.dots){if(!REDUCE){d.x+=d.vx*dt*(1+energy);d.y+=d.vy*dt*(1+energy)}if(d.x<-4)d.x=w+4;if(d.x>w+4)d.x=-4;if(d.y<-4)d.y=h+4;if(d.y>h+4)d.y=-4;c.fillStyle=C.sub;c.globalAlpha=.10+.07*Math.sin(tt+d.ph)+energy*.08;c.fillRect(d.x,d.y,1.6,1.6)}
  const sy=(tt*22)%h;c.strokeStyle=C.acc;c.globalAlpha=.05;c.beginPath();c.moveTo(0,sy+.5);c.lineTo(w,sy+.5);c.stroke();
  const bs=18,m=12;c.strokeStyle=C.sub;c.globalAlpha=.3;c.beginPath();c.moveTo(m,m+bs);c.lineTo(m,m);c.lineTo(m+bs,m);c.moveTo(w-m-bs,m);c.lineTo(w-m,m);c.lineTo(w-m,m+bs);c.moveTo(m,h-m-bs);c.lineTo(m,h-m);c.lineTo(m+bs,h-m);c.moveTo(w-m-bs,h-m);c.lineTo(w-m,h-m);c.lineTo(w-m,h-m-bs);c.stroke();
- c.font='9px ui-monospace, Menlo, Consolas, monospace';c.fillStyle=C.sub;c.globalAlpha=.5;c.textAlign='left';c.fillText('FIELD MONITOR · '+(busy?'RENDER · BUSY':active?'LIVE · ANALYSER':'SYNTHETIC · IDLE'),m+6,h-m-4);c.textAlign='right';c.fillText(active||busy?'SIGNAL OK':'NO SIGNAL',w-m-6,h-m-4);c.textAlign='left';c.globalAlpha=1}
+ c.font='9px ui-monospace, Menlo, Consolas, monospace';c.fillStyle=C.sub;c.globalAlpha=.5;c.textAlign='left';c.fillText('FIELD MONITOR · '+(PORTABLE?'PORTABLE · ':'')+(busy?'RENDER · BUSY':active?'LIVE · ANALYSER':'SYNTHETIC · IDLE'),m+6,h-m-4);c.textAlign='right';c.fillText(active||busy?'SIGNAL OK':'NO SIGNAL',w-m-6,h-m-4);c.textAlign='left';c.globalAlpha=1}
 window.addEventListener('resize',()=>{fieldFit();if(REDUCE)drawField(0,true)});
 function tick(now){if(!document.hidden){drawMini(now||performance.now());if(T.playing){drawOverlay();updateLCD()}if(!REDUCE)drawField(now||performance.now())}requestAnimationFrame(tick)}
 requestAnimationFrame(tick);
-/* ---------- FFT (verified vs numpy 1e-12) ---------- */
+/* ---------- FFT ---------- */
 function makeFFT(N){const levels=Math.round(Math.log2(N));const rev=new Uint32Array(N);for(let i=0;i<N;i++){let r=0,x=i;for(let b=0;b<levels;b++){r=(r<<1)|(x&1);x>>=1}rev[i]=r}
  return function(re,im,inv){for(let i=0;i<N;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
   for(let len=2;len<=N;len<<=1){const ang=(inv?1:-1)*2*Math.PI/len,wr=Math.cos(ang),wi=Math.sin(ang),half=len>>1;
    for(let i=0;i<N;i+=len){let cwr=1,cwi=0;for(let j=0;j<half;j++){const a=i+j,b=a+half;const vr=re[b]*cwr-im[b]*cwi,vi=re[b]*cwi+im[b]*cwr;re[b]=re[a]-vr;im[b]=im[a]-vi;re[a]+=vr;im[a]+=vi;const nwr=cwr*wr-cwi*wi;cwi=cwr*wi+cwi*wr;cwr=nwr}}}
   if(inv)for(let i=0;i<N;i++){re[i]/=N;im[i]/=N}}}
-/* ---------- DENOISE (verified: AUTO safe + LEARN reliable) ---------- */
+/* ---------- DENOISE ---------- */
 async function denoiseChannel(x,amount,N,fft,token,onProg,learned,floor){
  const hop=N>>2,half=N>>1;const win=new Float64Array(N);for(let i=0;i<N;i++)win[i]=.5-.5*Math.cos(2*Math.PI*i/N);
  const padLen=N+x.length+N+hop;const pad=new Float32Array(padLen);pad.set(x,N);
@@ -695,7 +692,7 @@ async function encFlac(chans,sr,st,prog,token){const ch=chans.length,n=chans[0].
 let lamePromise=null;
 function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=()=>{s.remove();rej(new Error('load fail'))};document.head.appendChild(s)})}
 function loadLame(){if(lamePromise)return lamePromise;
- lamePromise=(async()=>{const urls=['https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js','https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js','https://unpkg.com/lamejs@1.2.0/lame.min.js'];
+ lamePromise=(async()=>{const urls=['lame.min.js','https://cdnjs.cloudflare.com/ajax/libs/lamejs/1.2.0/lame.min.js','https://cdn.jsdelivr.net/npm/lamejs@1.2.0/lame.min.js','https://unpkg.com/lamejs@1.2.0/lame.min.js'];
   for(const u of urls){try{await loadScript(u);if(window.lamejs&&window.lamejs.Mp3Encoder){CODECS.mp3='ok';CODECS.vbr=!!(lamejs.Lame&&lamejs.VbrMode&&typeof lamejs.Lame.prototype.setVBR==='function'&&typeof lamejs.Lame.prototype.encode_buffer_ieee_float==='function');return true}}catch(e){}}
   CODECS.mp3='no';return false})().then(ok=>{if(!ok&&S.settings.format==='mp3'){S.settings.format='wav';toast({type:'err',msg:t('t_mp3_fb'),dur:7000})}renderFmt();if(S.settings.format==='mp3')buildCodecBox();updateSummary();return ok});
  return lamePromise}
@@ -733,7 +730,7 @@ async function encOpus(chans,sr,st,prog,token){if(CODECS.opus!=='ok')throw new E
  for(let i=0;i<packets.length;i++){cum+=Math.round(packets[i].d*48/1000);const last=i===packets.length-1;const gran=last?preSkip+n:preSkip+cum;pages.push(oggPage(serial,seq++,last?4:0,Math.max(gran,preSkip),packets[i].b))}
  let total=0;for(const p of pages)total+=p.length;const out=new Uint8Array(total);let off=0;for(const p of pages){out.set(p,off);off+=p.length}
  prog(1);return{data:out,mime:'audio/ogg',meta:st.opus.bitrate+'k · '+(st.opus.signal==='voice'?t('voice'):t('music'))+' · cx'+st.opus.complexity}}
-/* ---------- MP4 mux (verified) ---------- */
+/* ---------- MP4 mux ---------- */
 function cat(parts){let n=0;for(const p of parts)n+=p.length;const o=new Uint8Array(n);let off=0;for(const p of parts){o.set(p,off);off+=p.length}return o}
 function s4(s){return new Uint8Array([s.charCodeAt(0),s.charCodeAt(1),s.charCodeAt(2),s.charCodeAt(3)])}
 function u32(v){const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,v>>>0);return b}
@@ -765,7 +762,7 @@ function mp4Mux(frames,durations,nch,sr,entry,totalSamples){
  const trak=box4('trak',[tkhd,mdia]);
  const moov=box4('moov',[mvhd,trak]);
  return cat([ftyp,mdat,moov])}
-/* ---------- ALAC (verified lossless) ---------- */
+/* ---------- ALAC ---------- */
 async function encAlac(chans,sr,st,prog,token){const ch=chans.length,n=chans[0].length,bps=+st.alac.depth,FL=4096,dith=st.dither;const q=bps===16?q16:q24;const frames=[];const sizes=[];const counts=[];const w=new BW(FL*ch*4+64);const nfr=Math.ceil(n/FL);
  for(let fr=0;fr<nfr;fr++){const base=fr*FL,cnt=Math.min(FL,n-base);w.reset();w.write(ch===1?0:1,3);w.write(0,16);w.write(cnt!==FL?1:0,1);w.write(0,2);w.write(1,1);if(cnt!==FL)w.write(cnt,32);
   for(let i=0;i<cnt;i++)for(let c=0;c<ch;c++)w.write(q(chans[c][base+i],dith),bps);
@@ -775,7 +772,7 @@ async function encAlac(chans,sr,st,prog,token){const ch=chans.length,n=chans[0].
  const se=cat([new Uint8Array(6),u16(1),u16(0),u16(0),u32(0),u16(ch),u16(bps),u16(0),u16(0),u32(Math.min(sr,65535)*65536),box4('alac',[new Uint8Array(4),cookie])]);
  const out=mp4Mux(frames,counts,ch,sr,box4('alac',se),n);
  prog(1);return{data:out,mime:'audio/mp4',meta:'alac '+bps+'bit · '+t('lossless')}}
-/* ---------- AAC / M4A (verified) ---------- */
+/* ---------- AAC / M4A ---------- */
 async function detectAac(){let ok=false;try{if(typeof AudioEncoder!=='undefined'&&typeof AudioData!=='undefined'){const r=await AudioEncoder.isConfigSupported({codec:'mp4a.40.2',sampleRate:44100,numberOfChannels:2,bitrate:192000});ok=!!r.supported}}catch(e){ok=false}
  CODECS.aac=ok?'ok':'no';if(!ok&&(S.settings.format==='m4a'||S.settings.format==='aac')){S.settings.format='wav';toast({type:'err',msg:t('t_aac_fb'),dur:6000})}renderFmt();updateSummary()}
 const AAC_FI={96000:0,88200:1,64000:2,48000:3,44100:4,32000:5,24000:6,22050:7,16000:8,12000:9,11025:10,8000:11};
@@ -806,6 +803,37 @@ function makeZip(entries){const enc=new TextEncoder(),parts=[],central=[];let of
   const ch=new Uint8Array(46+name.length),cv=new DataView(ch.buffer);cv.setUint32(0,0x02014b50,true);cv.setUint16(4,20,true);cv.setUint16(6,20,true);cv.setUint16(8,0x0800,true);cv.setUint16(10,0,true);cv.setUint16(12,tm,true);cv.setUint16(14,dt,true);cv.setUint32(16,crc,true);cv.setUint32(20,e.data.length,true);cv.setUint32(24,e.data.length,true);cv.setUint16(28,name.length,true);cv.setUint32(42,offset,true);ch.set(name,46);central.push(ch);offset+=lh.length+e.data.length}
  let cdSize=0;for(const c of central)cdSize+=c.length;const eo=new Uint8Array(22),ev=new DataView(eo.buffer);ev.setUint32(0,0x06054b50,true);ev.setUint16(8,entries.length,true);ev.setUint16(10,entries.length,true);ev.setUint32(12,cdSize,true);ev.setUint32(16,offset,true);
  return new Blob([...parts,...central,eo],{type:'application/zip'})}
+/* ---------- disk export (File System Access API + graceful fallback) ---------- */
+async function pickSaveTarget(ids,fmt){
+ const multi=ids.length>1;
+ if(multi){
+  if(typeof window.showDirectoryPicker!=='function')return null;
+  try{return{kind:'dir',handle:await window.showDirectoryPicker({id:'trakt-export',mode:'readwrite',startIn:'documents'})}}
+  catch(e){if(e&&e.name==='AbortError')throw{saveCancelled:true};return null}
+ }
+ if(typeof window.showSaveFilePicker!=='function')return null;
+ const src=getFile(ids[0]),info=FMT[fmt];
+ try{return{kind:'file',handle:await window.showSaveFilePicker({id:'trakt-export',startIn:'documents',suggestedName:baseName(src.name)+'.'+info.ext,types:[{description:info.ext.toUpperCase()+' audio',accept:{[info.mime]:['.'+info.ext]}}]})}}
+ catch(e){if(e&&e.name==='AbortError')throw{saveCancelled:true};return null}
+}
+async function uniqueInDir(dir,name){
+ let n=name,k=2;
+ for(let i=0;i<400;i++){
+  try{await dir.getFileHandle(n,{create:false})}catch(e){return n}
+  n=baseName(name)+'_'+k+'.'+extOf(name);k++;
+ }
+ return n;
+}
+async function writeToDisk(target,name,bytes){
+ try{
+  let fh=target.handle;
+  if(target.kind==='dir')fh=await target.handle.getFileHandle(name,{create:true});
+  const w=await fh.createWritable();
+  await w.write(new Blob([bytes]));
+  await w.close();
+  return true;
+ }catch(e){return false}
+}
 /* ---------- conversion ---------- */
 const ENC={wav:encWav,mp3:encMp3,flac:encFlac,aiff:encAiff,opus:encOpus,ogg:encOpus,alac:encAlac,m4a:(c,s,st,p,tk)=>encAac(c,s,st,p,tk,'m4a'),aac:(c,s,st,p,tk)=>encAac(c,s,st,p,tk,'aac')};
 function setProgress(name,stage,pct,i,N){$('progStage').textContent=(N>1?'['+(i+1)+'/'+N+'] ':'')+stage+' · '+name;$('prBar').style.width=Math.round(pct*100)+'%';$('progPct').textContent=Math.round(((i+pct)/N)*100)+'%'}
@@ -816,9 +844,14 @@ async function runConversion(ids){if(S.converting)return;
  if(fmt==='mp3'&&CODECS.mp3!=='ok'){toast({type:'err',msg:t('t_mp3_un')});return}
  if((fmt==='opus'||fmt==='ogg')&&CODECS.opus!=='ok'){toast({type:'err',msg:t('t_opus_un')});return}
  if((fmt==='m4a'||fmt==='aac')&&CODECS.aac!=='ok'){toast({type:'err',msg:t('t_aac_un')});return}
+ /* save-destination dialog opens inside the click gesture, before any encoding */
+ const multi=ids.length>1;
+ let target=null;
+ try{target=await pickSaveTarget(ids,fmt)}
+ catch(e){if(e&&e.saveCancelled){toast({msg:t('t_save_cancel'),dur:3500});return}target=null}
  const st=deepCopy(S.settings);S.converting=true;S.cancel={c:false};
  $('btnConvert').disabled=true;$('btnBatch').disabled=true;$('progWrap').classList.add('on');
- let okCount=0,cancelled=false;
+ let okCount=0,cancelled=false;const fresh=[];
  for(let i=0;i<ids.length;i++){const f=getFile(ids[i]);if(!f)continue;f.status='converting';renderImport();const eff=effective(f,st);
   try{setProgress(f.name,t('dsp'),0,i,ids.length);
    const{chans,sr}=await processFile(f,st,eff,s=>setProgress(f.name,s,.03,i,ids.length),S.cancel,p=>setProgress(f.name,t('denoise'),.03+p*.05,i,ids.length));
@@ -827,18 +860,39 @@ async function runConversion(ids){if(S.converting)return;
    const out=await ENC[fmt](chans,sr,st,p=>setProgress(f.name,t('encode')+' '+fmt,.08+p*.9,i,ids.length),S.cancel);
    const encMs=performance.now()-encT;const info=FMT[fmt];const blob=new Blob([out.data],{type:info.mime});const url=URL.createObjectURL(blob);
    const chName=chans.length===1?t('mono_s'):chans.length===2?t('stereo_s'):chans.length+'ch';
-   S.results.unshift({id:uid(),fileId:f.id,name:baseName(f.name)+'.'+info.ext,fmt,bytes:out.data,blob,url,size:out.data.length,srcSize:f.size,dur:chans[0].length/sr,sr,ch:chans.length,ms:encMs,ts:new Date(),sub:out.meta+' · '+(sr/1000).toFixed(1)+'k · '+chName+(st.normalize?' · '+t('norm_s')+' '+st.normTarget+'dB':'')+(st.denoise.amount>0?' · dn'+st.denoise.amount:'')});
+   const res={id:uid(),fileId:f.id,name:baseName(f.name)+'.'+info.ext,fmt,bytes:out.data,blob,url,size:out.data.length,srcSize:f.size,dur:chans[0].length/sr,sr,ch:chans.length,ms:encMs,ts:new Date(),sub:out.meta+' · '+(sr/1000).toFixed(1)+'k · '+chName+(st.normalize?' · '+t('norm_s')+' '+st.normTarget+'dB':'')+(st.denoise.amount>0?' · dn'+st.denoise.amount:'')};
+   S.results.unshift(res);fresh.push(res);
+   /* immediate write to the chosen place on disk */
+   let saved=false,diskName=res.name;
+   if(target){
+    diskName=target.kind==='dir'?await uniqueInDir(target.handle,res.name):(target.handle.name||res.name);
+    saved=await writeToDisk(target,diskName,out.data);
+    if(!saved){toast({type:'err',msg:t('t_save_fail'),dur:6500});downloadResult(res)}
+   }else if(!multi){downloadResult(res)}
    f.status='done';okCount++;renderImport();renderResults();blip('ok');
-   const res=S.results[0];toast({type:'ok',msg:res.name+' · '+fmtBytes(res.size),action:{label:t('t_download'),fn:()=>downloadResult(res)},dur:5200});
+   if(saved)toast({type:'ok',msg:t('t_saved',diskName)+' · '+fmtBytes(res.size),dur:5200});
+   else if(!multi||target)toast({type:'ok',msg:res.name+' · '+fmtBytes(res.size),action:{label:t('t_download'),fn:()=>downloadResult(res)},dur:5200});
   }catch(e){if(e&&e.cancelled){cancelled=true;f.status='ready';renderImport();break}f.status='ready';renderImport();toast({type:'err',msg:t('t_conv_err')+(e&&e.message?e.message:e),dur:8000});blip('err')}}
  S.converting=false;$('progWrap').classList.remove('on');renderImport();updateSummary();
- if(cancelled)toast({msg:t('t_cancel')});else if(okCount>1)toast({type:'ok',msg:t('t_batch',okCount),dur:5000})}
+ if(cancelled){toast({msg:t('t_cancel')});return}
+ if(target&&multi&&okCount>1)toast({type:'ok',msg:t('t_batch_saved',okCount),dur:5200});
+ else if(!target&&multi){
+  if(fresh.length>1)saveZipOf(fresh);
+  else if(fresh.length===1)downloadResult(fresh[0]);
+ }
+}
 $('btnConvert').onclick=()=>{if(S.sel)runConversion([S.sel])};
 $('btnBatch').onclick=()=>runConversion(S.files.filter(f=>f.buffer).map(f=>f.id));
 $('progCancel').onclick=()=>{if(S.cancel)S.cancel.c=true};
 window.addEventListener('beforeunload',e=>{if(S.converting){e.preventDefault();e.returnValue=''}});
-/* ---------- results ---------- */
+/* ---------- results (unchanged behaviour) ---------- */
 function downloadResult(r){const a=document.createElement('a');a.href=r.url;a.download=r.name;document.body.appendChild(a);a.click();a.remove()}
+function saveZipOf(list){
+ try{const d=new Date();const stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');const used=new Set();
+  const entries=list.map(r=>{let n=r.name,k=2;while(used.has(n)){n=baseName(r.name)+'_'+k+'.'+extOf(r.name);k++}used.add(n);return{name:n,data:r.bytes,date:r.ts}});
+  const blob=makeZip(entries),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='trakt_batch_'+stamp+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
+  toast({type:'ok',msg:t('t_zip',entries.length)+fmtBytes(blob.size)});return true;
+ }catch(e){toast({type:'err',msg:'ZIP: '+e.message});return false}}
 function renderResults(){$('resCount').textContent=S.results.length;$('resSaveAll').disabled=!S.results.length;$('resClear').style.display=S.results.length?'':'none';
  if(!S.results.length){$('resList').innerHTML='<div class="res-empty">'+t('res_empty')+'</div>';return}
  $('resList').innerHTML=S.results.map(r=>{const ratio=Math.round((1-r.size/Math.max(1,r.srcSize))*100);const rh=ratio>=0?'<b>−'+ratio+'%</b>':'<b class="up">+'+(-ratio)+'%</b>';const playing=S.playingRes===r.id;
@@ -850,11 +904,7 @@ $('resList').addEventListener('click',e=>{const btn=e.target.closest('[data-a]')
  if(a==='q'){importFiles([new File([r.bytes],r.name,{type:r.blob.type})]);toast({type:'ok',msg:'«'+r.name+'»'+t('t_to_import'),dur:3500})}});
 $('resPlayer').addEventListener('ended',()=>{S.playingRes=null;renderResults()});
 $('resClear').onclick=()=>{if(!S.results.length)return;const old=S.results.slice();stopResult();S.results=[];renderResults();toast({msg:t('t_res_cleared',old.length),action:{label:t('t_undo'),fn:()=>{S.results=old.concat(S.results);renderResults()}},onExpire:()=>old.forEach(r=>URL.revokeObjectURL(r.url)),dur:6500})};
-$('resSaveAll').onclick=()=>{if(!S.results.length)return;if(S.results.length===1){downloadResult(S.results[0]);return}
- try{const d=new Date();const stamp=d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0')+'_'+String(d.getHours()).padStart(2,'0')+String(d.getMinutes()).padStart(2,'0');const used=new Set();
-  const entries=S.results.map(r=>{let n=r.name,k=2;while(used.has(n)){n=baseName(r.name)+'_'+k+'.'+extOf(r.name);k++}used.add(n);return{name:n,data:r.bytes,date:r.ts}});
-  const blob=makeZip(entries),url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='trakt_batch_'+stamp+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);
-  toast({type:'ok',msg:t('t_zip',entries.length)+fmtBytes(blob.size)})}catch(e){toast({type:'err',msg:'ZIP: '+e.message})}};
+$('resSaveAll').onclick=()=>{if(!S.results.length)return;if(S.results.length===1){downloadResult(S.results[0]);return}saveZipOf(S.results)};
 /* ---------- format / codec UI ---------- */
 function codecState(fmt){return fmt==='mp3'?CODECS.mp3:(fmt==='opus'||fmt==='ogg')?CODECS.opus:(fmt==='m4a'||fmt==='aac')?CODECS.aac:'ok'}
 function renderFmt(){document.querySelectorAll('#fmtChips .chip').forEach(ch=>{const fmt=ch.dataset.fmt;const state=codecState(fmt);ch.classList.toggle('on',S.settings.format===fmt);ch.classList.toggle('dim',state==='no');ch.textContent=fmt.toUpperCase()+(state==='wait'?' …':'');
